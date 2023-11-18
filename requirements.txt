@@ -1,0 +1,7 @@
+PyQt5
+langchain
+openai
+PyPDF2
+tiktoken
+faiss-cpu
+python-docx
