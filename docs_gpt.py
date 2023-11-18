@@ -9,35 +9,48 @@ from getpass import getpass
 import textwrap
 import docx
 
+# Check if the OpenAI API key is set
 if os.environ.get("OPENAI_API_KEY") is None:
     token = getpass("Enter your OpenAI token: ")
     os.environ["OPENAI_API_KEY"] = str(token)
 
+# Initialize OpenAI embeddings and QA chain
 embeddings = OpenAIEmbeddings()
 chain = load_qa_chain(OpenAI(), chain_type="stuff")
 
 
 class DocSearch:
     def __init__(self, root_files):
+        """
+        Initialize the DocSearch object.
+
+        Parameters
+        ----------
+        root_files: str or list
+            A file path or a list of file paths to be processed.
+        """
         if isinstance(root_files, str):
             self._root_files = [root_files]
         else:
             self._root_files = root_files
         self.docsearch = self.extract_texts(self._root_files)
 
-    def extract_texts(self, root_files: list):
+    def extract_texts(self, root_files):
         """
-        Extracts text from uploaded file and puts it in a list.
+        Extract text from uploaded files and create a FAISS index.
+
         Supported file types: .pdf, .docx
         If multiple files are provided, their contents are concatenated.
 
         Parameters
         ----------
-        root_files: A list of file paths to be processed.
+        root_files: list
+            A list of file paths to be processed.
 
         Returns
         -------
-        A FAISS index object containing the embeddings of the text chunks.
+        FAISS index object
+            Contains the embeddings of the text chunks.
         """
         raw_text = ""
 
@@ -57,7 +70,7 @@ class DocSearch:
                 for paragraph in doc.paragraphs:
                     raw_text += paragraph.text
 
-        # retreival we don't hit the token size limits
+        # Retrieval to avoid token size limits
         text_splitter = CharacterTextSplitter(
             separator="\n",
             chunk_size=1000,
@@ -72,37 +85,37 @@ class DocSearch:
 
     def run_query(self, query):
         """
-        Runs a query on a PDF file using the docsearch and chain
-        libraries.
+        Run a query on a PDF file using docsearch and the chain library.
 
         Parameters
         ----------
-        query: A string representing the query to be run. searched.
+        query: str
+            The query to be searched.
 
         Returns
         -------
-        A string containing the output of the chain library run
-        on the documents returned by the docsearch similarity search.
+        str
+            The output of the chain library run on the documents returned by docsearch similarity search.
         """
-
         docs = self.docsearch.similarity_search(query)
         return chain.run(input_documents=docs, question=query)
 
     def ask_question(self, query, endpoint=None):
         """
-        Returns the answer to a question asked on a document.
+        Return the answer to a question asked on a document.
 
         Parameters
         ----------
-        query: A string representing the query to be run
-        endpoint: A function that takes a string and outputs it somewhere.
-        If not provided, defaults to print.
+        query: str
+            The query to be run.
+        endpoint: function, optional
+            A function that takes a string and outputs it somewhere.
+            If not provided, defaults to print.
 
         Returns
         -------
         None
         """
-
         if not endpoint:
             endpoint = print
 
